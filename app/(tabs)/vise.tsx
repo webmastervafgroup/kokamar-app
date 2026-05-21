@@ -1,4 +1,5 @@
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Linking, Image } from "react-native"
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Linking, Image, StatusBar } from "react-native"
+import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { useRouter } from "expo-router"
 import Ionicons from "@expo/vector-icons/Ionicons"
 import Animated, { FadeInDown } from "react-native-reanimated"
@@ -19,7 +20,7 @@ const MENU_SECTIONS: { title: string; soon?: boolean; items: MenuItem[] }[] = [
   {
     title: "Istraži",
     items: [
-      { icon: "newspaper-outline", title: "Blog", sub: "Recepti, saveti i novosti", route: "/(tabs)/blog/index" },
+      { icon: "newspaper-outline", title: "Blog", sub: "Recepti, saveti i novosti", route: "/(tabs)/blog" },
       { icon: "pricetags-outline", title: "Brendovi", sub: "Brendovi u ponudi", route: "/(tabs)/brendovi" },
       { icon: "location-outline", title: "Lokacije", sub: "10 prodavnica u Beogradu", route: "/(tabs)/lokacije/index" },
       { icon: "information-circle-outline", title: "O kompaniji", url: "https://kokamar.rs/o-kompaniji" },
@@ -41,6 +42,7 @@ const MENU_SECTIONS: { title: string; soon?: boolean; items: MenuItem[] }[] = [
 
 export default function ViseScreen() {
   const router = useRouter()
+  const insets = useSafeAreaInsets()
 
   function handlePress(item: MenuItem) {
     if (item.soon) return
@@ -54,26 +56,25 @@ export default function ViseScreen() {
       showsVerticalScrollIndicator={false}
       contentContainerStyle={{ paddingBottom: 32 }}
     >
-      {/* Profil kartica */}
-      <Animated.View entering={FadeInDown.delay(0).springify()} style={styles.profileCard}>
-        <View style={styles.profileLeft}>
-          <View style={styles.avatarBox}>
-            <Image
-              source={require("@/assets/images/logo.png")}
-              style={styles.avatarLogo}
-              resizeMode="contain"
-            />
-          </View>
-          <View>
-            <Text style={styles.profileName}>Kokamar Market</Text>
-            <Text style={styles.profileSub}>Vaš domaći market u Beogradu</Text>
-            <View style={styles.profileBadgeRow}>
-              <View style={styles.profileBadge}>
-                <Text style={styles.profileBadgeText}>10 lokacija</Text>
+      <StatusBar barStyle="light-content" backgroundColor={Colors.primary} />
+      {/* Crveni header sa bijelim logom */}
+      <Animated.View entering={FadeInDown.delay(0).springify()}>
+        <View style={[styles.headerCard, { paddingTop: insets.top + 16 }]}>
+          <View style={styles.headerTop}>
+            <View>
+              <View style={styles.badge}>
+                <Text style={styles.badgeText}>MOJ PROFIL</Text>
               </View>
-              <View style={styles.profileBadge}>
-                <Text style={styles.profileBadgeText}>07–21h</Text>
-              </View>
+              <Image
+                source={require("@/assets/images/logo-white.png")}
+                style={styles.headerLogo}
+                resizeMode="contain"
+              />
+              <Text style={styles.headerSub}>Vaš domaći market u Beogradu</Text>
+            </View>
+            <View style={styles.countBox}>
+              <Text style={styles.countNum}>10</Text>
+              <Text style={styles.countLabel}>lokacija</Text>
             </View>
           </View>
         </View>
@@ -178,7 +179,7 @@ export default function ViseScreen() {
         </Animated.View>
       ))}
 
-      <Text style={styles.version}>kokamar.rs · v1.0.0</Text>
+      <Text style={styles.version}>kokamar.rs by Zo! · v1.0.2</Text>
     </ScrollView>
   )
 }
@@ -186,32 +187,30 @@ export default function ViseScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
 
-  profileCard: {
-    backgroundColor: Colors.white,
-    marginHorizontal: 16, marginTop: 16,
-    borderRadius: Radius.lg,
-    padding: 16,
-    borderWidth: 1, borderColor: Colors.border,
-    shadowColor: "#000", shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06, shadowRadius: 6, elevation: 2,
+  headerCard: {
+    backgroundColor: Colors.primary,
+    paddingHorizontal: 20, paddingTop: 20, paddingBottom: 16,
   },
-  profileLeft: { flexDirection: "row", alignItems: "center", gap: 14 },
-  avatarBox: {
-    width: 64, height: 64, borderRadius: Radius.md,
-    backgroundColor: Colors.primaryLight,
-    justifyContent: "center", alignItems: "center",
-    borderWidth: 1.5, borderColor: Colors.primary,
-    overflow: "hidden",
+  headerTop: {
+    flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start",
   },
-  avatarLogo: { width: 52, height: 36 },
-  profileName: { fontSize: FontSize.md, fontWeight: "800", color: Colors.foreground },
-  profileSub: { fontSize: FontSize.xs, color: Colors.muted, marginTop: 2 },
-  profileBadgeRow: { flexDirection: "row", gap: 6, marginTop: 8 },
-  profileBadge: {
-    backgroundColor: Colors.g100, borderRadius: Radius.full,
-    paddingHorizontal: 9, paddingVertical: 3,
+  badge: {
+    backgroundColor: "rgba(255,255,255,0.25)",
+    borderRadius: Radius.full,
+    paddingHorizontal: 10, paddingVertical: 4,
+    alignSelf: "flex-start", marginBottom: 10,
   },
-  profileBadgeText: { fontSize: 10, fontWeight: "600", color: Colors.muted },
+  badgeText: { fontSize: 9, fontWeight: "800", color: "#fff", letterSpacing: 1 },
+  headerLogo: { width: 120, height: 38 },
+  headerSub: { fontSize: FontSize.xs, color: "rgba(255,255,255,0.8)", marginTop: 6 },
+  countBox: {
+    backgroundColor: "rgba(0,0,0,0.2)",
+    borderRadius: Radius.md,
+    paddingHorizontal: 14, paddingVertical: 10,
+    alignItems: "center",
+  },
+  countNum: { fontSize: FontSize.xl, fontWeight: "900", color: "#fff" },
+  countLabel: { fontSize: FontSize.xs, color: "rgba(255,255,255,0.8)", marginTop: 1 },
 
   socialRow: {
     flexDirection: "row", gap: 10,

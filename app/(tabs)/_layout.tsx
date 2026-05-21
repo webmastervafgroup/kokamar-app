@@ -7,7 +7,7 @@ type IoniconName = React.ComponentProps<typeof Ionicons>["name"]
 
 function TabIcon({ name, focused }: { name: IoniconName; focused: boolean }) {
   const icon = focused ? name : `${name}-outline` as IoniconName
-  return <Ionicons name={icon} size={22} color={focused ? Colors.primary : Colors.g400} />
+  return <Ionicons name={icon} size={24} color={focused ? Colors.primary : Colors.g400} />
 }
 
 function FabIcon() {
@@ -18,16 +18,20 @@ function FabIcon() {
   )
 }
 
-// Header desno — search + notifikacije, uvijek isto
-function HeaderRight() {
+function HomeHeaderLeft() {
+  const router = useRouter()
+  return (
+    <TouchableOpacity onPress={() => router.push("/(tabs)")} activeOpacity={0.7} style={styles.logoBtn}>
+      <Image source={require("@/assets/images/logo.png")} style={styles.headerLogo} resizeMode="contain" />
+    </TouchableOpacity>
+  )
+}
+
+function HomeHeaderRight() {
   const router = useRouter()
   return (
     <View style={styles.headerRight}>
-      <TouchableOpacity
-        style={styles.headerBtn}
-        onPress={() => router.push("/(tabs)/katalog")}
-        activeOpacity={0.7}
-      >
+      <TouchableOpacity style={styles.headerBtn} onPress={() => router.push("/(tabs)/katalog")} activeOpacity={0.7}>
         <Ionicons name="search-outline" size={22} color={Colors.foreground} />
       </TouchableOpacity>
       <TouchableOpacity
@@ -41,20 +45,9 @@ function HeaderRight() {
   )
 }
 
-// Početna: logo lijevo
-function HomeHeaderLeft() {
-  const router = useRouter()
-  return (
-    <TouchableOpacity onPress={() => router.push("/(tabs)")} activeOpacity={0.7} style={styles.logoBtn}>
-      <Image source={require("@/assets/images/logo.png")} style={styles.headerLogo} resizeMode="contain" />
-    </TouchableOpacity>
-  )
-}
-
 const baseHeaderStyle = {
   backgroundColor: Colors.white,
-  elevation: 0,
-  shadowOpacity: 0,
+  elevation: 0, shadowOpacity: 0,
   borderBottomWidth: 1,
   borderBottomColor: Colors.border,
 } as any
@@ -69,93 +62,79 @@ export default function TabLayout() {
           backgroundColor: Colors.white,
           borderTopColor: Colors.border,
           borderTopWidth: 1,
-          height: Platform.OS === "ios" ? 88 : 62,
+          height: Platform.OS === "ios" ? 88 : 66,
           paddingBottom: Platform.OS === "ios" ? 28 : 6,
           paddingTop: 6,
+          shadowColor: "#000",
+          shadowOffset: { width: 0, height: -4 },
+          shadowOpacity: 0.12,
+          shadowRadius: 12,
+          elevation: 16,
         },
         tabBarLabelStyle: { fontSize: 10, fontWeight: "600" },
         headerShadowVisible: false,
+        // Sve sekundarne stranice — bez sistemskog headera
+        headerShown: false,
       }}
     >
-      {/* Početna — logo */}
+      {/* Početna — jedina sa headerom (logo) */}
       <Tabs.Screen
         name="index"
         options={{
           title: "Početna",
           tabBarIcon: ({ focused }) => <TabIcon name="home" focused={focused} />,
+          headerShown: true,
           headerStyle: baseHeaderStyle,
           headerTitle: "",
           headerLeft: () => <HomeHeaderLeft />,
-          headerRight: () => <HeaderRight />,
+          headerRight: () => <HomeHeaderRight />,
         }}
       />
 
-      {/* Akcije — centriran naslov */}
+      {/* Akcije — bez headera, search je unutar ekrana */}
       <Tabs.Screen
         name="akcije"
         options={{
           title: "Akcije",
           tabBarIcon: ({ focused }) => <TabIcon name="pricetag" focused={focused} />,
-          headerStyle: baseHeaderStyle,
-          headerTitle: "Akcije i popusti",
-          headerTitleAlign: "center",
-          headerTitleStyle: styles.centeredTitle,
-          headerLeft: () => <View style={{ width: 16 }} />,
-          headerRight: () => <HeaderRight />,
         }}
       />
 
-      {/* Moj Kod — bez headera (vlastiti) */}
+      {/* Moj Kod */}
       <Tabs.Screen
         name="moj-kod"
         options={{
           title: "",
           tabBarIcon: () => <FabIcon />,
           tabBarLabel: () => null,
-          headerShown: false,
         }}
       />
 
-      {/* Lokacije — bez headera (vlastiti hero) */}
+      {/* Lokacije */}
       <Tabs.Screen
         name="lokacije/index"
         options={{
           title: "Lokacije",
           tabBarIcon: ({ focused }) => <TabIcon name="location" focused={focused} />,
-          headerShown: false,
         }}
       />
 
-      {/* Više — centriran naslov */}
+      {/* Više */}
       <Tabs.Screen
         name="vise"
         options={{
           title: "Više",
           tabBarIcon: ({ focused }) => <TabIcon name="menu" focused={focused} />,
-          headerStyle: baseHeaderStyle,
-          headerTitle: "Moj profil",
-          headerTitleAlign: "center",
-          headerTitleStyle: styles.centeredTitle,
-          headerLeft: () => <View style={{ width: 16 }} />,
-          headerRight: () => <HeaderRight />,
         }}
       />
 
-      {/* Skriveni tabovi */}
-      <Tabs.Screen
-        name="katalog/index"
-        options={{
-          href: null,
-          headerStyle: baseHeaderStyle,
-          headerTitle: "Katalog",
-          headerTitleAlign: "center",
-          headerTitleStyle: styles.centeredTitle,
-          headerLeft: () => <View style={{ width: 16 }} />,
-          headerRight: () => <HeaderRight />,
-        }}
-      />
+      <Tabs.Screen name="katalog/index" options={{ href: null }} />
       <Tabs.Screen name="katalog/[handle]" options={{ href: null }} />
       <Tabs.Screen name="lokacije/[slug]" options={{ href: null }} />
+      <Tabs.Screen name="blog/index" options={{ href: null }} />
+      <Tabs.Screen name="blog/[slug]" options={{ href: null }} />
+      <Tabs.Screen name="brendovi/index" options={{ href: null }} />
+      <Tabs.Screen name="brendovi/[name]" options={{ href: null }} />
     </Tabs>
   )
 }
@@ -163,17 +142,17 @@ export default function TabLayout() {
 const styles = StyleSheet.create({
   logoBtn: { paddingLeft: 16 },
   headerLogo: { width: 100, height: 34 },
-  centeredTitle: { fontSize: 17, fontWeight: "700", color: Colors.foreground },
   headerRight: { flexDirection: "row", alignItems: "center", marginRight: 8 },
   headerBtn: { padding: 8 },
   fab: {
-    width: 54, height: 54, borderRadius: 27,
+    width: 58, height: 58, borderRadius: 29,
     backgroundColor: Colors.primary,
     justifyContent: "center", alignItems: "center",
-    marginBottom: 20,
-    shadowColor: Colors.primary,
+    marginBottom: 22,
+    borderWidth: 2, borderColor: "#fff",
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4, shadowRadius: 8,
-    elevation: 8,
+    shadowOpacity: 0.25, shadowRadius: 8,
+    elevation: 10,
   },
 })

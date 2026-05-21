@@ -1,5 +1,6 @@
 import { View, Text, StyleSheet, TouchableOpacity, Image, StatusBar, Dimensions } from "react-native"
 import { useRouter } from "expo-router"
+import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { Colors, FontSize, Radius } from "@/constants/Colors"
 import Ionicons from "@expo/vector-icons/Ionicons"
 import Animated, { FadeInDown, FadeInUp } from "react-native-reanimated"
@@ -14,13 +15,14 @@ const FAKE_BARCODE_LINES = [
 
 export default function MojKodScreen() {
   const router = useRouter()
+  const insets = useSafeAreaInsets()
 
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor={Colors.primary} />
 
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} activeOpacity={0.7}>
           <Ionicons name="chevron-back" size={26} color="#fff" />
         </TouchableOpacity>
@@ -33,7 +35,7 @@ export default function MojKodScreen() {
         {/* Logo */}
         <Animated.View entering={FadeInDown.delay(40).springify()} style={styles.logoWrap}>
           <Image
-            source={require("@/assets/images/logo.png")}
+            source={require("@/assets/images/logo-white.png")}
             style={styles.logo}
             resizeMode="contain"
           />
@@ -78,17 +80,17 @@ export default function MojKodScreen() {
         {/* Info kartice */}
         <Animated.View entering={FadeInDown.delay(120).springify()} style={styles.infoRow}>
           <View style={styles.infoCard}>
-            <Text style={styles.infoEmoji}>🎯</Text>
+            <Ionicons name="pricetag-outline" size={22} color="#fff" />
             <Text style={styles.infoTitle}>Personalne akcije</Text>
             <Text style={styles.infoSub}>Popusti za vas</Text>
           </View>
           <View style={styles.infoCard}>
-            <Text style={styles.infoEmoji}>🎟️</Text>
+            <Ionicons name="ticket-outline" size={22} color="#fff" />
             <Text style={styles.infoTitle}>Vaučeri</Text>
             <Text style={styles.infoSub}>Digitalni kuponi</Text>
           </View>
           <View style={styles.infoCard}>
-            <Text style={styles.infoEmoji}>📊</Text>
+            <Ionicons name="trending-up-outline" size={22} color="#fff" />
             <Text style={styles.infoTitle}>Moja ušteda</Text>
             <Text style={styles.infoSub}>Statistika</Text>
           </View>
@@ -115,7 +117,7 @@ const styles = StyleSheet.create({
 
   header: {
     flexDirection: "row", alignItems: "center", justifyContent: "space-between",
-    paddingTop: 52, paddingBottom: 16, paddingHorizontal: 16,
+    paddingBottom: 16, paddingHorizontal: 16,
   },
   backBtn: { width: 42, height: 42, justifyContent: "center" },
   headerTitle: { fontSize: FontSize.lg, fontWeight: "800", color: "#fff" },
@@ -123,7 +125,7 @@ const styles = StyleSheet.create({
   content: { flex: 1, paddingHorizontal: 20, paddingBottom: 32 },
 
   logoWrap: { alignItems: "center", marginBottom: 24 },
-  logo: { width: 130, height: 42, tintColor: "rgba(255,255,255,0.9)" },
+  logo: { width: 130, height: 42 },
 
   barcodeCard: {
     backgroundColor: Colors.white,
@@ -176,12 +178,12 @@ const styles = StyleSheet.create({
     borderRadius: Radius.lg,
     padding: 14, alignItems: "center",
     borderWidth: 1, borderColor: "rgba(255,255,255,0.2)",
+    gap: 6,
   },
-  infoEmoji: { fontSize: 24, marginBottom: 6 },
   infoTitle: { fontSize: FontSize.xs, fontWeight: "700", color: "#fff", textAlign: "center" },
-  infoSub: { fontSize: 9, color: "rgba(255,255,255,0.7)", marginTop: 2, textAlign: "center" },
+  infoSub: { fontSize: 9, color: "rgba(255,255,255,0.7)", textAlign: "center" },
 
-  ctaWrap: { marginTop: "auto" },
+  ctaWrap: { marginTop: "auto" as any },
   ctaBtn: {
     backgroundColor: Colors.white,
     borderRadius: Radius.full,

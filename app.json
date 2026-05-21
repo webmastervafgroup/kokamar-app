@@ -13,18 +13,24 @@
       "resizeMode": "contain",
       "backgroundColor": "#da2128"
     },
-    "ios": {
-      "supportsTablet": false,
-      "bundleIdentifier": "rs.kokamar.app"
-    },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
-        "backgroundColor": "#da2128"
+        "monochromeImage": "./assets/images/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
       },
       "package": "rs.kokamar.app",
+      "versionCode": 2,
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "permissions": ["ACCESS_FINE_LOCATION", "ACCESS_COARSE_LOCATION"]
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "rs.kokamar.app",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "Koristimo vašu lokaciju da pronađemo najbližu Kokamar prodavnicu."
+      }
     },
     "web": {
       "bundler": "metro",

@@ -1,4 +1,4 @@
-function parseWpPrice(value: unknown): number | null {
+function parseNum(value: unknown): number | null {
   if (value === null || value === undefined) return null
   const str = String(value).trim()
   if (!str) return null
@@ -22,22 +22,39 @@ function fmt(n: number): string {
 }
 
 export function resolveProductPrice(product: any): ProductPrice {
-  const wp = (product?.metadata?.wp_meta || {}) as Record<string, unknown>
+  let current: number | null = null
+  let compare: number | null = null
 
-  // Kokamar: regular_price + sale_price
-  const regular = parseWpPrice(wp["regular_price"]) ?? parseWpPrice(wp["_regular_price"]) ?? parseWpPrice(wp["_price"])
-  const sale = parseWpPrice(wp["regular_sale_price"]) ?? parseWpPrice(wp["_sale_price"])
-
-  let current = sale ?? regular
-  let compare = (sale != null && regular != null && regular > sale) ? regular : null
-
-  // Fallback: Medusa variant price
-  if (current == null) {
-    const raw = product?.variants?.[0]?.prices?.[0]?.amount
-    if (raw != null) {
-      const v = Number(raw)
-      current = v < 500 ? v : v / 100
+  // 1. Primarno: Medusa calculated_price (region_id=reg_rs_srbija)
+  const calcPrice = product?.variants?.[0]?.calculated_price
+  if (calcPrice) {
+    const calc = calcPrice.calculated_amount
+    const orig = calcPrice.original_amount
+    if (calc != null && calc > 0) {
+      // Medusa čuva u najmanjoj jedinici (parama) — ako je > 500 to su pare, inače dinari
+      current = calc > 500 ? calc / 100 : calc
+      if (orig != null && orig > 0 && orig !== calc) {
+        const origDin = orig > 500 ? orig / 100 : orig
+        if (origDin > current) compare = origDin
+      }
     }
+  }
+
+  // 2. Fallback: wp_meta regular/sale price
+  if (current === null) {
+    const wp = (product?.metadata?.wp_meta || {}) as Record<string, unknown>
+    const regular = parseNum(wp["regular_price"]) ?? parseNum(wp["_regular_price"]) ?? parseNum(wp["_price"])
+    const sale = parseNum(wp["regular_sale_price"]) ?? parseNum(wp["_sale_price"])
+    current = sale ?? regular
+    if (sale != null && regular != null && regular > sale) compare = regular
+  }
+
+  // 3. Fallback: rank_math_schema_Product.offers.price
+  if (current === null) {
+    const schemaPrice = product?.metadata?.wp_meta?.rank_math_schema_Product?.offers?.price
+      ?? product?.metadata?.rank_math_schema_Product?.offers?.price
+    const n = parseNum(schemaPrice)
+    if (n != null) current = n
   }
 
   const isOnSale = compare != null && current != null && compare > current
@@ -60,7 +77,9 @@ export function isInAkcija(product: any): boolean {
   const metaTax: any[] = product?.metadata?.taxonomies ?? []
   const allNames = [
     ...cats.map((c: any) => String(c?.name ?? "").toLowerCase()),
-    ...metaTax.map((t: any) => String(t?.name ?? "").toLowerCase()),
+    ...metaTax
+      .filter((t: any) => t?.taxonomy === "product_cat")
+      .map((t: any) => String(t?.name ?? "").toLowerCase()),
   ]
   return allNames.some(n => n.startsWith("akcija"))
 }

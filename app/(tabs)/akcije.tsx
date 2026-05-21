@@ -1,9 +1,10 @@
-import { useEffect, useState } from "react"
+import { useEffect, useState, useCallback } from "react"
 import {
   View, Text, StyleSheet, TouchableOpacity,
   FlatList, ActivityIndicator, Linking, Image, Dimensions,
-  TextInput,
+  TextInput, StatusBar, RefreshControl,
 } from "react-native"
+import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { Colors, FontSize, Radius } from "@/constants/Colors"
 import { getAkcijaProducts } from "@/lib/api/medusa"
 import { getAkcijaLetak } from "@/lib/api/payload"
@@ -13,6 +14,7 @@ import Ionicons from "@expo/vector-icons/Ionicons"
 import Animated, {
   FadeInDown, FadeIn, useAnimatedStyle, useSharedValue, withSpring,
 } from "react-native-reanimated"
+import { OfflineBanner } from "@/components/OfflineBanner"
 
 const { width } = Dimensions.get("window")
 const CARD_W = (width - 48) / 2
@@ -45,30 +47,31 @@ function AkcijaCard({ item, index }: { item: any; index: number }) {
         activeOpacity={1}
       >
         <View style={styles.akcijaTag}>
-          <Text style={styles.akcijaTagText}>% POPUST</Text>
+          <Text style={styles.akcijaTagText}>AKCIJA</Text>
         </View>
         <View style={styles.imgBox}>
           {img ? (
             <Image source={{ uri: img }} style={styles.cardImage} resizeMode="contain" />
           ) : (
-            <View style={styles.noImg}><Text style={{ fontSize: 36 }}>🛒</Text></View>
+            <View style={styles.noImg}><Ionicons name="cart-outline" size={36} color={Colors.g400} /></View>
           )}
         </View>
         <View style={styles.cardBody}>
           <Text style={styles.cardName} numberOfLines={2}>{decodeHtml(item.title)}</Text>
-          <View style={styles.priceBlock}>
-            {price.formatted ? (
-              <>
-                {price.formattedCompare && (
-                  <Text style={styles.priceOld}>{price.formattedCompare}</Text>
-                )}
-                <Text style={[styles.cardPrice, price.isOnSale && { color: Colors.primary }]}>
-                  {price.formatted}
-                </Text>
-              </>
-            ) : (
-              <Text style={styles.priceNA}>Cena se formira</Text>
-            )}
+          <View style={styles.priceRow}>
+            <View style={{ flex: 1 }}>
+              {price.formattedCompare && (
+                <Text style={styles.priceOld}>{price.formattedCompare}</Text>
+              )}
+              {price.formatted ? (
+                <Text style={styles.cardPrice}>{price.formatted}</Text>
+              ) : (
+                <Text style={styles.priceNA}>Cena se formira</Text>
+              )}
+            </View>
+            <View style={styles.arrowCircle}>
+              <Ionicons name="arrow-forward" size={15} color="#fff" />
+            </View>
           </View>
         </View>
       </TouchableOpacity>
@@ -78,22 +81,28 @@ function AkcijaCard({ item, index }: { item: any; index: number }) {
 }
 
 export default function AkcijeScreen() {
+  const insets = useSafeAreaInsets()
   const [products, setProducts] = useState<any[]>([])
   const [filtered, setFiltered] = useState<any[]>([])
   const [letak, setLetak] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
   const [search, setSearch] = useState("")
   const [sortBy, setSortBy] = useState<"default" | "price_asc" | "price_desc">("default")
 
-  useEffect(() => {
-    Promise.all([getAkcijaProducts(), getAkcijaLetak()])
+  const fetchData = useCallback(() => {
+    return Promise.all([getAkcijaProducts(), getAkcijaLetak()])
       .then(([prods, l]) => {
         setProducts(prods)
         setFiltered(prods)
         setLetak(l)
       })
-      .finally(() => setLoading(false))
+      .finally(() => { setLoading(false); setRefreshing(false) })
   }, [])
+
+  useEffect(() => { fetchData() }, [])
+
+  const onRefresh = useCallback(() => { setRefreshing(true); fetchData() }, [])
 
   useEffect(() => {
     let result = [...products]
@@ -120,7 +129,9 @@ export default function AkcijeScreen() {
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingTop: insets.top }]}>
+      <StatusBar barStyle="dark-content" backgroundColor={Colors.background} />
+      <OfflineBanner />
       {/* Header card */}
       <Animated.View entering={FadeInDown.delay(20).springify()}>
         <View style={styles.headerCard}>
@@ -206,10 +217,11 @@ export default function AkcijeScreen() {
           contentContainerStyle={styles.grid}
           columnWrapperStyle={{ gap: 12 }}
           showsVerticalScrollIndicator={false}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[Colors.primary]} />}
           renderItem={({ item, index }) => <AkcijaCard item={item} index={index} />}
           ListEmptyComponent={() => (
             <View style={styles.empty}>
-              <Text style={styles.emptyEmoji}>🔍</Text>
+              <Ionicons name="search-outline" size={48} color={Colors.g200} />
               <Text style={styles.emptyText}>Nema rezultata</Text>
             </View>
           )}
@@ -297,11 +309,12 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   akcijaTag: {
-    position: "absolute", top: 8, left: 8, zIndex: 1,
-    backgroundColor: Colors.primary, borderRadius: 6,
-    paddingHorizontal: 6, paddingVertical: 3,
+    position: "absolute", top: 0, left: 0, zIndex: 1,
+    backgroundColor: "#ffd400",
+    borderBottomRightRadius: 6,
+    paddingHorizontal: 8, paddingVertical: 4,
   },
-  akcijaTagText: { color: "#fff", fontSize: 8, fontWeight: "800", letterSpacing: 0.3 },
+  akcijaTagText: { color: "#1a1a1a", fontSize: 9, fontWeight: "800", letterSpacing: 0.3 },
   imgBox: { height: 140, backgroundColor: Colors.g100, overflow: "hidden" },
   cardImage: { width: "100%", height: "100%" },
   noImg: { flex: 1, justifyContent: "center", alignItems: "center" },
@@ -311,10 +324,17 @@ const styles = StyleSheet.create({
     color: Colors.foreground, lineHeight: 17,
     minHeight: 34,
   },
-  priceBlock: { marginTop: 6 },
-  priceOld: { fontSize: 11, color: Colors.g400, textDecorationLine: "line-through", lineHeight: 14 },
-  cardPrice: { fontSize: FontSize.sm, fontWeight: "800", color: Colors.foreground },
+  priceRow: { flexDirection: "row", alignItems: "flex-end", justifyContent: "space-between", marginTop: 6 },
+  priceOld: { fontSize: 10, color: Colors.g400, textDecorationLine: "line-through", lineHeight: 13, marginBottom: 1 },
+  cardPrice: { fontSize: FontSize.md, fontWeight: "800", color: Colors.primary },
   priceNA: { fontSize: FontSize.xs, color: Colors.g400, fontStyle: "italic" },
+  arrowCircle: {
+    width: 32, height: 32, borderRadius: 16,
+    backgroundColor: Colors.primary,
+    justifyContent: "center", alignItems: "center",
+    shadowColor: Colors.primary, shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3, shadowRadius: 4, elevation: 3,
+  },
   empty: { padding: 60, alignItems: "center" },
   emptyEmoji: { fontSize: 40, marginBottom: 12 },
   emptyText: { fontSize: FontSize.base, color: Colors.muted },

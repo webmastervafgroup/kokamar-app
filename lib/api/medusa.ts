@@ -6,21 +6,16 @@ const BASE_HEADERS = {
   "Content-Type": "application/json",
 }
 
+// Region Srbija — potreban za calculated_price u RSD
+const REGION_ID = "reg_rs_srbija"
+
 async function apiFetch(url: string) {
   try {
-    console.log("FETCH:", url)
     const res = await fetch(url, { headers: BASE_HEADERS })
     const text = await res.text()
-    const preview = text.slice(0, 80)
-    console.log(`RESPONSE [${res.status}]:`, preview)
-
-    if (text.trimStart().startsWith("<")) {
-      console.warn("HTML umesto JSON! URL:", url)
-      return null
-    }
+    if (text.trimStart().startsWith("<")) return null
     return JSON.parse(text)
-  } catch (e) {
-    console.warn("Fetch error:", url, String(e))
+  } catch {
     return null
   }
 }
@@ -41,7 +36,7 @@ export async function getProducts(params: {
 }) {
   const limit = params.limit ?? 20
   const offset = params.offset ?? 0
-  let url = `${API.medusaBase}/store/products?limit=${limit}&offset=${offset}`
+  let url = `${API.medusaBase}/store/products?limit=${limit}&offset=${offset}&region_id=${REGION_ID}`
   if (params.categoryId) url += `&category_id%5B%5D=${params.categoryId}`
   if (params.q) url += `&q=${encodeURIComponent(params.q)}`
   const data = await apiFetch(url)
@@ -49,8 +44,9 @@ export async function getProducts(params: {
 }
 
 export async function getProduct(handle: string) {
+  const fields = "id,title,handle,thumbnail,description,subtitle,images,categories,metadata,variants,market_type,attributes,taxonomies,sort_order,short_description,wp_attributes_raw"
   const data = await apiFetch(
-    `${API.medusaBase}/store/products?handle=${encodeURIComponent(handle)}`
+    `${API.medusaBase}/store/products?handle=${encodeURIComponent(handle)}&region_id=${REGION_ID}&fields=${fields}`
   )
   return data?.products?.[0] ?? null
 }
@@ -64,14 +60,10 @@ export async function getAkcijaProducts() {
     c.name?.toLowerCase().startsWith("akcija od")
   )
 
-  if (!akcijaCat) {
-    console.warn("Akcija kategorija nije pronađena")
-    return []
-  }
-  console.log("Akcija:", akcijaCat.name, akcijaCat.id)
+  if (!akcijaCat) return []
 
   const data = await apiFetch(
-    `${API.medusaBase}/store/products?category_id%5B%5D=${akcijaCat.id}&limit=100`
+    `${API.medusaBase}/store/products?category_id%5B%5D=${akcijaCat.id}&limit=100&region_id=${REGION_ID}`
   )
   return data?.products ?? []
 }
