@@ -1,6 +1,9 @@
 import { Tabs, useRouter } from "expo-router"
-import { Platform, View, Image, StyleSheet, TouchableOpacity, Alert } from "react-native"
+import { Platform, View, Image, StyleSheet, TouchableOpacity, Text } from "react-native"
 import Ionicons from "@expo/vector-icons/Ionicons"
+import { hapticSelection, hapticLight } from "@/hooks/useHaptic"
+import { usePushNotifications } from "@/hooks/usePushNotifications"
+import { useNotificationStore, useNotificationListener } from "@/hooks/useNotificationStore"
 import { Colors } from "@/constants/Colors"
 
 type IoniconName = React.ComponentProps<typeof Ionicons>["name"]
@@ -27,6 +30,26 @@ function HomeHeaderLeft() {
   )
 }
 
+function NotificationBell() {
+  const router = useRouter()
+  const { unreadCount } = useNotificationStore()
+
+  return (
+    <TouchableOpacity
+      style={styles.headerBtn}
+      onPress={() => { hapticLight(); router.push("/(tabs)/notifikacije") }}
+      activeOpacity={0.7}
+    >
+      <Ionicons name={unreadCount > 0 ? "notifications" : "notifications-outline"} size={22} color={Colors.foreground} />
+      {unreadCount > 0 && (
+        <View style={styles.badge}>
+          <Text style={styles.badgeText}>{unreadCount > 9 ? "9+" : unreadCount}</Text>
+        </View>
+      )}
+    </TouchableOpacity>
+  )
+}
+
 function HomeHeaderRight() {
   const router = useRouter()
   return (
@@ -34,13 +57,7 @@ function HomeHeaderRight() {
       <TouchableOpacity style={styles.headerBtn} onPress={() => router.push("/(tabs)/katalog")} activeOpacity={0.7}>
         <Ionicons name="search-outline" size={22} color={Colors.foreground} />
       </TouchableOpacity>
-      <TouchableOpacity
-        style={styles.headerBtn}
-        onPress={() => Alert.alert("Notifikacije", "Push notifikacije dolaze uskoro.", [{ text: "OK" }])}
-        activeOpacity={0.7}
-      >
-        <Ionicons name="notifications-outline" size={22} color={Colors.foreground} />
-      </TouchableOpacity>
+      <NotificationBell />
     </View>
   )
 }
@@ -53,8 +70,12 @@ const baseHeaderStyle = {
 } as any
 
 export default function TabLayout() {
+  usePushNotifications()
+  useNotificationListener()
+
   return (
     <Tabs
+      screenListeners={{ tabPress: () => hapticSelection() }}
       screenOptions={{
         tabBarActiveTintColor: Colors.primary,
         tabBarInactiveTintColor: Colors.g400,
@@ -73,11 +94,9 @@ export default function TabLayout() {
         },
         tabBarLabelStyle: { fontSize: 10, fontWeight: "600" },
         headerShadowVisible: false,
-        // Sve sekundarne stranice — bez sistemskog headera
         headerShown: false,
       }}
     >
-      {/* Početna — jedina sa headerom (logo) */}
       <Tabs.Screen
         name="index"
         options={{
@@ -90,8 +109,6 @@ export default function TabLayout() {
           headerRight: () => <HomeHeaderRight />,
         }}
       />
-
-      {/* Akcije — bez headera, search je unutar ekrana */}
       <Tabs.Screen
         name="akcije"
         options={{
@@ -99,8 +116,6 @@ export default function TabLayout() {
           tabBarIcon: ({ focused }) => <TabIcon name="pricetag" focused={focused} />,
         }}
       />
-
-      {/* Moj Kod */}
       <Tabs.Screen
         name="moj-kod"
         options={{
@@ -109,8 +124,6 @@ export default function TabLayout() {
           tabBarLabel: () => null,
         }}
       />
-
-      {/* Lokacije */}
       <Tabs.Screen
         name="lokacije/index"
         options={{
@@ -118,8 +131,6 @@ export default function TabLayout() {
           tabBarIcon: ({ focused }) => <TabIcon name="location" focused={focused} />,
         }}
       />
-
-      {/* Više */}
       <Tabs.Screen
         name="vise"
         options={{
@@ -134,7 +145,11 @@ export default function TabLayout() {
       <Tabs.Screen name="blog/index" options={{ href: null }} />
       <Tabs.Screen name="blog/[slug]" options={{ href: null }} />
       <Tabs.Screen name="brendovi/index" options={{ href: null }} />
+      <Tabs.Screen name="o-kompaniji" options={{ href: null }} />
+      <Tabs.Screen name="kontakt" options={{ href: null }} />
       <Tabs.Screen name="brendovi/[name]" options={{ href: null }} />
+      <Tabs.Screen name="nalog" options={{ href: null }} />
+      <Tabs.Screen name="notifikacije" options={{ href: null }} />
     </Tabs>
   )
 }
@@ -143,7 +158,16 @@ const styles = StyleSheet.create({
   logoBtn: { paddingLeft: 16 },
   headerLogo: { width: 100, height: 34 },
   headerRight: { flexDirection: "row", alignItems: "center", marginRight: 8 },
-  headerBtn: { padding: 8 },
+  headerBtn: { padding: 8, position: "relative" },
+  badge: {
+    position: "absolute", top: 4, right: 4,
+    minWidth: 16, height: 16, borderRadius: 8,
+    backgroundColor: Colors.primary,
+    justifyContent: "center", alignItems: "center",
+    paddingHorizontal: 3,
+    borderWidth: 1.5, borderColor: Colors.white,
+  },
+  badgeText: { fontSize: 9, fontWeight: "800", color: "#fff" },
   fab: {
     width: 58, height: 58, borderRadius: 29,
     backgroundColor: Colors.primary,

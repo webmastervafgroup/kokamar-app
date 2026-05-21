@@ -18,13 +18,19 @@ type MenuItem = {
 
 const MENU_SECTIONS: { title: string; soon?: boolean; items: MenuItem[] }[] = [
   {
+    title: "Moj nalog",
+    items: [
+      { icon: "person-circle-outline", title: "Moj nalog", sub: "Prijava i registracija", route: "/(tabs)/nalog" },
+    ],
+  },
+  {
     title: "Istraži",
     items: [
       { icon: "newspaper-outline", title: "Blog", sub: "Recepti, saveti i novosti", route: "/(tabs)/blog" },
       { icon: "pricetags-outline", title: "Brendovi", sub: "Brendovi u ponudi", route: "/(tabs)/brendovi" },
       { icon: "location-outline", title: "Lokacije", sub: "10 prodavnica u Beogradu", route: "/(tabs)/lokacije/index" },
-      { icon: "information-circle-outline", title: "O kompaniji", url: "https://kokamar.rs/o-kompaniji" },
-      { icon: "mail-outline", title: "Kontakt", url: "https://kokamar.rs/kontakt" },
+      { icon: "information-circle-outline", title: "O kompaniji", sub: "Ko smo i šta nudimo", route: "/(tabs)/o-kompaniji" },
+      { icon: "mail-outline", title: "Kontakt", sub: "Radno vreme i info", route: "/(tabs)/kontakt" },
     ],
   },
   {

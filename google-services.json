@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "873526289188",
+    "project_id": "moj-kokamar",
+    "storage_bucket": "moj-kokamar.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:873526289188:android:10ccdf77f9bf4f914d49b1",
+        "android_client_info": {
+          "package_name": "rs.kokamar.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDA8xd6UAXUkS2NeBQbu__GkrNUgloCaFw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

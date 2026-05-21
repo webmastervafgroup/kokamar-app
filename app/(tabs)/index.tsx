@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, useCallback } from "react"
+import { useEffect, useState, useCallback } from "react"
 import {
   View, Text, ScrollView, StyleSheet, Image, TouchableOpacity,
   ActivityIndicator, Dimensions, FlatList, StatusBar, Linking, RefreshControl,
@@ -17,33 +17,7 @@ import { resolveProductPrice } from "@/lib/util/price"
 
 const { width } = Dimensions.get("window")
 const CARD_W = (width - 48) / 2
-const CAROUSEL_H = 180
 
-// Nedeljna akcija — vikend slike sa sajta (horizontalni scroll, kao PromoImageCarousel na sajtu)
-const VIKEND_SLIDES = [
-  { src: "https://kokamar.rs/akcije/vikend-01-pileci-file.webp", alt: "Sveži Pileći File 1kg" },
-  { src: "https://kokamar.rs/akcije/vikend-02-svinjska-krmenadla.webp", alt: "Svinjska Krmenadla 1kg" },
-  { src: "https://kokamar.rs/akcije/vikend-03-svinjska-plecka.webp", alt: "Svinjska Plećka BK 1kg" },
-  { src: "https://kokamar.rs/akcije/vikend-04-pileci-batak.webp", alt: "Pileći Batak 1kg" },
-  { src: "https://kokamar.rs/akcije/vikend-05-mladi-krompir.webp", alt: "Mladi Krompir 1kg" },
-  { src: "https://kokamar.rs/akcije/vikend-06-mladi-kupus.webp", alt: "Mladi Kupus 1kg" },
-  { src: "https://kokamar.rs/akcije/vikend-07-mleko.webp", alt: "Dr Milk Mleko 2.8% 1L" },
-  { src: "https://kokamar.rs/akcije/vikend-08-voda-gala.webp", alt: "Voda Gala Limun 1.5L" },
-  { src: "https://kokamar.rs/akcije/vikend-09-nutella.webp", alt: "Nutella 750ml" },
-  { src: "https://kokamar.rs/akcije/vikend-10-plazma-sladoled.webp", alt: "Quattro Plazma Sladoled 800ml" },
-  { src: "https://kokamar.rs/akcije/vikend-11-toalet-papir.webp", alt: "Perfex Toalet Papir 10/1" },
-  { src: "https://kokamar.rs/akcije/vikend-14-persil.webp", alt: "Persil Prašak 5.325kg" },
-]
-
-// Fallback karusel kad nema Payload slika — mega akcija slike
-const FALLBACK_SLIDES = [
-  { src: "https://kokamar.rs/akcije/mega-01-sladoledi.webp", alt: "Aloma Sladoledi 3u1" },
-  { src: "https://kokamar.rs/akcije/mega-02-dijamant-ulje.webp", alt: "Dijamant Ulje 1L" },
-  { src: "https://kokamar.rs/akcije/mega-03-secer.webp", alt: "Sunoko Šećer 1kg" },
-  { src: "https://kokamar.rs/akcije/mega-04-mleko.webp", alt: "Imlek Mleko 1L" },
-  { src: "https://kokamar.rs/akcije/mega-05-testenine.webp", alt: "Danubius Testenine 400g" },
-  { src: "https://kokamar.rs/akcije/mega-06-pavlaka.webp", alt: "Imlek Pavlaka 400g" },
-]
 
 function decodeHtml(str: string): string {
   return str
@@ -103,60 +77,48 @@ function getCatIcon(name: string): { icon: IoniconName; color: string } {
   return { icon: "grid-outline", color: Colors.primary }
 }
 
-// Karusel sa slikama iz Payload, fallback na statičke slike sa sajta
-function PromoCarousel({ karuzeli }: { karuzeli: any[] }) {
-  const [active, setActive] = useState(0)
-  const flatRef = useRef<FlatList>(null)
 
-  // Skupi slike iz Payload
-  const payloadSlides: { src: string; alt: string }[] = []
+// Nedeljna akcija — horizontalni scroll kartica, kao PromoImageCarousel na sajtu
+function NedeljnaAkcija({ karuzeli }: { karuzeli: any[] }) {
+  const router = useRouter()
+  const THUMB = (width - 48) / 2.4
+
+  const slides: { src: string; alt: string }[] = []
   for (const k of karuzeli) {
     for (const s of (k.slike ?? [])) {
       const url = s.slika?.url
       if (url) {
-        const fullUrl = url.startsWith("http") ? url : `https://kokamar.rs/cms${url}`
-        payloadSlides.push({ src: fullUrl, alt: s.alt ?? k.naslov ?? "" })
+        const fullUrl = url.startsWith("http") ? url : `https://kokamar.rs${url}`
+        slides.push({ src: fullUrl, alt: s.alt ?? k.naslov ?? "" })
       }
     }
   }
 
-  // Ako nema Payload slika, koristi statičke sa sajta
-  const slides = payloadSlides.length > 0 ? payloadSlides : FALLBACK_SLIDES
-
-  return (
-    <Animated.View entering={FadeInDown.delay(30).springify()} style={styles.carouselWrap}>
-      <FlatList
-        ref={flatRef}
-        data={slides}
-        horizontal
-        pagingEnabled
-        showsHorizontalScrollIndicator={false}
-        keyExtractor={(_, i) => String(i)}
-        onMomentumScrollEnd={(e) => {
-          setActive(Math.round(e.nativeEvent.contentOffset.x / width))
-        }}
-        renderItem={({ item }) => (
-          <View style={styles.carouselSlide}>
-            <Image source={{ uri: item.src }} style={styles.carouselImg} resizeMode="cover" />
-          </View>
-        )}
-      />
-      {/* Dots */}
-      {slides.length > 1 && (
-        <View style={styles.dots}>
-          {slides.map((_, i) => (
-            <View key={i} style={[styles.dot, i === active && styles.dotActive]} />
-          ))}
+  if (slides.length === 0) return (
+    <Animated.View entering={FadeInDown.delay(50).springify()} style={styles.section}>
+      <View style={styles.sectionHeader}>
+        <View style={styles.sectionTitleRow}>
+          <View style={styles.sectionAccent} />
+          <Text style={styles.sectionTitle}>Akcije ove nedelje</Text>
         </View>
-      )}
+      </View>
+      <View style={styles.emptyCard}>
+        <Text style={styles.emptyTitle}>Nove akcije uskoro!</Text>
+        <Text style={styles.emptySub}>Pratite nas na društvenim mrežama i budite prvi obavešteni o popustima.</Text>
+        <View style={styles.emptyBtns}>
+          <TouchableOpacity style={styles.emptyBtn} onPress={() => Linking.openURL("https://www.instagram.com/kokamar_beograd/")} activeOpacity={0.8}>
+            <Ionicons name="logo-instagram" size={18} color={Colors.primary} />
+            <Text style={styles.emptyBtnText}>Instagram</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.emptyBtn} onPress={() => Linking.openURL("https://www.facebook.com/p/Kokamar-100076365541994/")} activeOpacity={0.8}>
+            <Ionicons name="logo-facebook" size={18} color={Colors.primary} />
+            <Text style={styles.emptyBtnText}>Facebook</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
     </Animated.View>
   )
-}
 
-// Nedeljna akcija — horizontalni scroll kartica, kao PromoImageCarousel na sajtu
-function NedeljnaAkcija() {
-  const router = useRouter()
-  const THUMB = (width - 48) / 2.4
   return (
     <Animated.View entering={FadeInDown.delay(50).springify()} style={styles.section}>
       <View style={styles.sectionHeader}>
@@ -173,7 +135,7 @@ function NedeljnaAkcija() {
         </TouchableOpacity>
       </View>
       <FlatList
-        data={VIKEND_SLIDES}
+        data={slides}
         horizontal
         showsHorizontalScrollIndicator={false}
         keyExtractor={(_, i) => String(i)}
@@ -304,9 +266,6 @@ export default function HomeScreen() {
       <StatusBar barStyle="dark-content" backgroundColor={Colors.background} />
       <OfflineBanner />
 
-      {/* Promo karuzel slika */}
-      {karuzeli.length > 0 && <PromoCarousel karuzeli={karuzeli} />}
-
       {/* Akcija promo bar */}
       <Animated.View entering={FadeInDown.delay(40).springify().damping(16)} style={styles.promoWrap}>
         <TouchableOpacity
@@ -335,7 +294,7 @@ export default function HomeScreen() {
       </Animated.View>
 
       {/* Nedeljna akcija — horizontalni scroll */}
-      <NedeljnaAkcija />
+      <NedeljnaAkcija karuzeli={karuzeli} />
 
       {/* Kategorije */}
       <Animated.View entering={FadeInDown.delay(80).springify()} style={styles.section}>
@@ -452,20 +411,6 @@ export default function HomeScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
-
-  // Karusel
-  carouselWrap: { marginBottom: 4 },
-  carouselSlide: { width, height: CAROUSEL_H },
-  carouselImg: { width: "100%", height: "100%" },
-  dots: {
-    flexDirection: "row", justifyContent: "center", gap: 6,
-    position: "absolute", bottom: 10, left: 0, right: 0,
-  },
-  dot: {
-    width: 6, height: 6, borderRadius: 3,
-    backgroundColor: "rgba(255,255,255,0.5)",
-  },
-  dotActive: { backgroundColor: "#fff", width: 18 },
 
   // Promo bar
   promoWrap: { paddingHorizontal: 16, marginTop: 12 },

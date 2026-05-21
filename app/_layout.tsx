@@ -3,6 +3,7 @@ import * as SplashScreen from "expo-splash-screen"
 import { useEffect } from "react"
 import { LogBox } from "react-native"
 import "react-native-reanimated"
+import { AuthProvider } from "@/context/AuthContext"
 
 LogBox.ignoreLogs(["Unable to activate keep awake"])
 
@@ -18,9 +19,11 @@ export default function RootLayout() {
   useEffect(() => { SplashScreen.hideAsync() }, [])
 
   return (
-    <Stack>
-      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-      <Stack.Screen name="modal" options={{ presentation: "modal" }} />
-    </Stack>
+    <AuthProvider>
+      <Stack>
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen name="modal" options={{ presentation: "modal" }} />
+      </Stack>
+    </AuthProvider>
   )
 }

@@ -12,6 +12,9 @@ import { getCategories, getProducts } from "@/lib/api/medusa"
 import { resolveProductPrice, isInAkcija } from "@/lib/util/price"
 import { OfflineBanner } from "@/components/OfflineBanner"
 import { useSearchHistory } from "@/hooks/useSearchHistory"
+import { SkeletonGrid } from "@/components/SkeletonCard"
+import { hapticLight } from "@/hooks/useHaptic"
+import { SortBottomSheet } from "@/components/SortBottomSheet"
 
 const { width } = Dimensions.get("window")
 const CARD_W = (width - 48) / 2
@@ -131,6 +134,12 @@ export default function KatalogScreen() {
   const [search, setSearch] = useState("")
   const [sort, setSort] = useState<SortKey>("default")
   const [showSort, setShowSort] = useState(false)
+  const SORT_SHEET_OPTIONS = [
+    { key: "default", label: "Akcije prve", icon: "pricetag-outline" as const },
+    { key: "price_asc", label: "Cena rastuće ↑", icon: "trending-up-outline" as const },
+    { key: "price_desc", label: "Cena opadajuće ↓", icon: "trending-down-outline" as const },
+    { key: "name_asc", label: "Naziv A–Z", icon: "text-outline" as const },
+  ]
   const [loading, setLoading] = useState(true)
   const [prodLoading, setProdLoading] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
@@ -175,9 +184,14 @@ export default function KatalogScreen() {
 
   function fetchProducts(categoryId: string) {
     setProdLoading(true)
+    const t = Date.now()
     getProducts({ categoryId, limit: 100 })
       .then((data) => setRawProducts(data.products ?? []))
-      .finally(() => { setProdLoading(false); setLoading(false); setRefreshing(false) })
+      .finally(() => {
+        const elapsed = Date.now() - t
+        const delay = Math.max(0, 600 - elapsed)
+        setTimeout(() => { setProdLoading(false); setLoading(false); setRefreshing(false) }, delay)
+      })
   }
 
   const onRefresh = useCallback(() => {
@@ -269,23 +283,15 @@ export default function KatalogScreen() {
         </View>
       )}
 
-      {/* Sort dropdown */}
-      {showSort && (
-        <View style={styles.sortDropdown}>
-          {SORT_OPTIONS.map(opt => (
-            <TouchableOpacity
-              key={opt.key}
-              style={[styles.sortOption, sort === opt.key && styles.sortOptionActive]}
-              onPress={() => { setSort(opt.key); setShowSort(false) }}
-            >
-              <Text style={[styles.sortOptionText, sort === opt.key && styles.sortOptionTextActive]}>
-                {opt.label}
-              </Text>
-              {sort === opt.key && <Ionicons name="checkmark" size={16} color={Colors.primary} />}
-            </TouchableOpacity>
-          ))}
-        </View>
-      )}
+      {/* Sort bottom sheet */}
+      <SortBottomSheet
+        visible={showSort}
+        onClose={() => setShowSort(false)}
+        options={SORT_SHEET_OPTIONS}
+        selected={sort}
+        onSelect={(key) => setSort(key as SortKey)}
+        title="Sortiraj artikle"
+      />
 
       {/* Kategorije chip scroll */}
       {!loading && (
@@ -327,9 +333,10 @@ export default function KatalogScreen() {
 
       {/* Products */}
       {(loading || prodLoading) ? (
-        <ActivityIndicator color={Colors.primary} style={{ marginTop: 40 }} size="large" />
+        <SkeletonGrid count={6} />
       ) : (
         <FlatList
+          key={selected ?? "search"}
           data={products}
           numColumns={2}
           keyExtractor={(item) => item.id}

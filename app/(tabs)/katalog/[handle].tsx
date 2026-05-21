@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 import {
   View, Text, StyleSheet, ScrollView, Image,
   ActivityIndicator, TouchableOpacity, StatusBar, Dimensions, Share,
@@ -49,6 +49,7 @@ export default function ProductScreen() {
   const { handle } = useLocalSearchParams<{ handle: string }>()
   const router = useRouter()
   const insets = useSafeAreaInsets()
+  const scrollRef = useRef<ScrollView>(null)
   const [product, setProduct] = useState<any>(null)
   const [similar, setSimilar] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -57,6 +58,10 @@ export default function ProductScreen() {
   const [selectedLoc, setSelectedLoc] = useState<string | null>(null)
   const [showLocPicker, setShowLocPicker] = useState(false)
   const [brandLogo, setBrandLogo] = useState<string | null>(null)
+
+  useEffect(() => {
+    scrollRef.current?.scrollTo({ y: 0, animated: false })
+  }, [handle])
 
   useEffect(() => {
     if (!handle) return
@@ -164,6 +169,7 @@ export default function ProductScreen() {
       </View>
 
       <ScrollView
+        ref={scrollRef}
         style={styles.container}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 48 }}

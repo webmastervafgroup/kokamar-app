@@ -11,6 +11,8 @@ import { getAkcijaLetak } from "@/lib/api/payload"
 import { resolveProductPrice } from "@/lib/util/price"
 import { useRouter } from "expo-router"
 import Ionicons from "@expo/vector-icons/Ionicons"
+import { SkeletonGrid } from "@/components/SkeletonCard"
+import { SortBottomSheet } from "@/components/SortBottomSheet"
 import Animated, {
   FadeInDown, FadeIn, useAnimatedStyle, useSharedValue, withSpring,
 } from "react-native-reanimated"
@@ -89,15 +91,26 @@ export default function AkcijeScreen() {
   const [refreshing, setRefreshing] = useState(false)
   const [search, setSearch] = useState("")
   const [sortBy, setSortBy] = useState<"default" | "price_asc" | "price_desc">("default")
+  const [showSort, setShowSort] = useState(false)
+  const SORT_OPTIONS_AKCIJE = [
+    { key: "default", label: "Podrazumevano", icon: "apps-outline" as const },
+    { key: "price_asc", label: "Cena rastuće ↑", icon: "trending-up-outline" as const },
+    { key: "price_desc", label: "Cena opadajuće ↓", icon: "trending-down-outline" as const },
+  ]
 
   const fetchData = useCallback(() => {
+    const t = Date.now()
     return Promise.all([getAkcijaProducts(), getAkcijaLetak()])
       .then(([prods, l]) => {
         setProducts(prods)
         setFiltered(prods)
         setLetak(l)
       })
-      .finally(() => { setLoading(false); setRefreshing(false) })
+      .finally(() => {
+        const elapsed = Date.now() - t
+        const delay = Math.max(0, 600 - elapsed)
+        setTimeout(() => { setLoading(false); setRefreshing(false) }, delay)
+      })
   }, [])
 
   useEffect(() => { fetchData() }, [])
@@ -123,10 +136,6 @@ export default function AkcijeScreen() {
       ? `https://kokamar.rs/cms${letak.pdfFajl.url}`
       : letak.pdfFajl.url)
     : null
-
-  const cycleSortBy = () => {
-    setSortBy(s => s === "default" ? "price_asc" : s === "price_asc" ? "price_desc" : "default")
-  }
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
@@ -193,7 +202,7 @@ export default function AkcijeScreen() {
         </View>
         <TouchableOpacity
           style={[styles.sortBtn, sortBy !== "default" && styles.sortBtnActive]}
-          onPress={cycleSortBy}
+          onPress={() => setShowSort(true)}
         >
           <Ionicons
             name="swap-vertical-outline"
@@ -206,9 +215,18 @@ export default function AkcijeScreen() {
         </TouchableOpacity>
       </Animated.View>
 
+      <SortBottomSheet
+        visible={showSort}
+        onClose={() => setShowSort(false)}
+        options={SORT_OPTIONS_AKCIJE}
+        selected={sortBy}
+        onSelect={(key) => setSortBy(key as typeof sortBy)}
+        title="Sortiraj akcije"
+      />
+
       {/* Products grid */}
       {loading ? (
-        <ActivityIndicator color={Colors.primary} style={{ marginTop: 40 }} size="large" />
+        <SkeletonGrid count={6} />
       ) : (
         <FlatList
           data={filtered}
