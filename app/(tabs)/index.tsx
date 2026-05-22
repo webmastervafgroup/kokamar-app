@@ -77,6 +77,60 @@ function getCatIcon(name: string): { icon: IoniconName; color: string } {
   return { icon: "grid-outline", color: Colors.primary }
 }
 
+// Hero fullscreen karuzel — slike iz Payload, swipe, dots
+function HeroKaruzel({ karuzeli }: { karuzeli: any[] }) {
+  const [active, setActive] = useState(0)
+
+  const slides: { src: string; alt: string; href?: string }[] = []
+  for (const k of karuzeli) {
+    for (const s of (k.slike ?? [])) {
+      const url = s.slika?.url
+      if (url) {
+        const fullUrl = url.startsWith("http") ? url : `https://kokamar.rs${url}`
+        slides.push({ src: fullUrl, alt: s.alt ?? k.naslov ?? "", href: s.href })
+      }
+    }
+  }
+
+  if (slides.length === 0) return null
+
+  return (
+    <View style={heroStyles.wrap}>
+      <FlatList
+        data={slides}
+        horizontal
+        pagingEnabled
+        showsHorizontalScrollIndicator={false}
+        keyExtractor={(_, i) => String(i)}
+        onMomentumScrollEnd={(e) => setActive(Math.round(e.nativeEvent.contentOffset.x / width))}
+        renderItem={({ item }) => (
+          <View style={heroStyles.slide}>
+            <Image source={{ uri: item.src }} style={heroStyles.img} resizeMode="cover" />
+          </View>
+        )}
+      />
+      {slides.length > 1 && (
+        <View style={heroStyles.dots}>
+          {slides.map((_, i) => (
+            <View key={i} style={[heroStyles.dot, i === active && heroStyles.dotActive]} />
+          ))}
+        </View>
+      )}
+    </View>
+  )
+}
+
+const heroStyles = StyleSheet.create({
+  wrap: { width, height: 220, backgroundColor: Colors.g100 },
+  slide: { width, height: 220 },
+  img: { width: "100%", height: "100%" },
+  dots: {
+    position: "absolute", bottom: 10, left: 0, right: 0,
+    flexDirection: "row", justifyContent: "center", gap: 6,
+  },
+  dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: "rgba(255,255,255,0.5)" },
+  dotActive: { backgroundColor: "#fff", width: 18 },
+})
 
 // Nedeljna akcija — horizontalni scroll kartica, kao PromoImageCarousel na sajtu
 function NedeljnaAkcija({ karuzeli }: { karuzeli: any[] }) {
@@ -265,6 +319,9 @@ export default function HomeScreen() {
     >
       <StatusBar barStyle="dark-content" backgroundColor={Colors.background} />
       <OfflineBanner />
+
+      {/* Hero fullscreen karuzel iz Payload — samo ako ima slika */}
+      <HeroKaruzel karuzeli={karuzeli} />
 
       {/* Akcija promo bar */}
       <Animated.View entering={FadeInDown.delay(40).springify().damping(16)} style={styles.promoWrap}>
