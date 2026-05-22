@@ -3,6 +3,12 @@
 # dependencies
 node_modules/
 
+# bekap arhive i duplikati
+01-bekap/
+*.zip
+"* (1).*"
+*\ \(1\).*
+
 # Expo
 .expo/
 dist/
