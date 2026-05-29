@@ -47,6 +47,61 @@ export async function getAkcijaLetak() {
   return data ?? null
 }
 
+/**
+ * App podešavanja iz Payload `app-config` globala — prekidači za sekcije početne.
+ * Default: sve uključeno osim hero (da ne pukne ako Payload nedostupan).
+ */
+export async function getAppConfig(): Promise<{
+  prikaziHeroKaruzel: boolean
+  prikaziNedeljneAkcije: boolean
+  prikaziKategorije: boolean
+  prikaziMesecnuAkciju: boolean
+  prikaziBrendove: boolean
+  prikaziBlog: boolean
+  maintenanceMode: boolean
+  maintenancePoruka?: string
+}> {
+  const d = await payloadFetch(`/globals/app-config?depth=0`)
+  return {
+    prikaziHeroKaruzel: d?.prikaziHeroKaruzel ?? false,
+    prikaziNedeljneAkcije: d?.prikaziNedeljneAkcije ?? true,
+    prikaziKategorije: d?.prikaziKategorije ?? true,
+    prikaziMesecnuAkciju: d?.prikaziMesecnuAkciju ?? true,
+    prikaziBrendove: d?.prikaziBrendove ?? true,
+    prikaziBlog: d?.prikaziBlog ?? true,
+    maintenanceMode: d?.maintenanceMode ?? false,
+    maintenancePoruka: d?.maintenancePoruka,
+  }
+}
+
+/** Pun URL za Payload media (apsolutni ili /cms prefiks). */
+function payloadMediaUrl(url?: string | null): string | null {
+  if (!url) return null
+  if (url.startsWith("http")) return url
+  return `https://kokamar.rs/cms${url}`
+}
+
+/**
+ * Mega Kokamar letak (flipbook) — global `mega-letak`.
+ * Vraća { naslov, pdfUrl, strane[] } ako je aktivan i u periodu (vaziOd–vaziDo), inače null.
+ */
+export async function getMegaLetak() {
+  const data = await payloadFetch(`/globals/mega-letak?depth=1`)
+  if (!data?.aktivan) return null
+  const now = new Date()
+  if (data.vaziOd && new Date(data.vaziOd) > now) return null
+  if (data.vaziDo && new Date(data.vaziDo) < now) return null
+  const strane = (Array.isArray(data.flipStrane) ? data.flipStrane : [])
+    .map((s: any) => payloadMediaUrl(s?.slika?.url))
+    .filter((u: string | null): u is string => Boolean(u))
+  if (strane.length === 0) return null
+  return {
+    naslov: data.naslov || "Mega Kokamar letak",
+    pdfUrl: payloadMediaUrl(data.pdfFajl?.url),
+    strane,
+  }
+}
+
 export async function getBrands() {
   const data = await payloadFetch(`/brands?limit=200&sort=name&depth=1`)
   return data?.docs ?? []

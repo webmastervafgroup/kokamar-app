@@ -7,7 +7,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { Colors, FontSize, Radius } from "@/constants/Colors"
 import { getAkcijaProducts } from "@/lib/api/medusa"
-import { getAkcijaLetak } from "@/lib/api/payload"
+import { getAkcijaLetak, getMegaLetak } from "@/lib/api/payload"
 import { resolveProductPrice } from "@/lib/util/price"
 import { useRouter } from "expo-router"
 import Ionicons from "@expo/vector-icons/Ionicons"
@@ -17,6 +17,7 @@ import Animated, {
   FadeInDown, FadeIn, useAnimatedStyle, useSharedValue, withSpring,
 } from "react-native-reanimated"
 import { OfflineBanner } from "@/components/OfflineBanner"
+import { MegaLetakFlipbook } from "@/components/MegaLetakFlipbook"
 
 const { width } = Dimensions.get("window")
 const CARD_W = (width - 48) / 2
@@ -87,6 +88,8 @@ export default function AkcijeScreen() {
   const [products, setProducts] = useState<any[]>([])
   const [filtered, setFiltered] = useState<any[]>([])
   const [letak, setLetak] = useState<any>(null)
+  const [megaLetak, setMegaLetak] = useState<{ naslov: string; pdfUrl: string | null; strane: string[] } | null>(null)
+  const [flipOpen, setFlipOpen] = useState(false)
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [search, setSearch] = useState("")
@@ -100,11 +103,12 @@ export default function AkcijeScreen() {
 
   const fetchData = useCallback(() => {
     const t = Date.now()
-    return Promise.all([getAkcijaProducts(), getAkcijaLetak()])
-      .then(([prods, l]) => {
+    return Promise.all([getAkcijaProducts(), getAkcijaLetak(), getMegaLetak()])
+      .then(([prods, l, mega]) => {
         setProducts(prods)
         setFiltered(prods)
         setLetak(l)
+        setMegaLetak(mega)
       })
       .finally(() => {
         const elapsed = Date.now() - t
@@ -180,8 +184,35 @@ export default function AkcijeScreen() {
               <Ionicons name="download-outline" size={20} color="rgba(255,255,255,0.9)" />
             </TouchableOpacity>
           )}
+
+          {megaLetak && megaLetak.strane.length > 0 && (
+            <TouchableOpacity
+              style={[styles.letakBtn, { marginTop: letakUrl ? 10 : 0 }]}
+              onPress={() => setFlipOpen(true)}
+              activeOpacity={0.85}
+            >
+              <View style={styles.letakIcon}>
+                <Ionicons name="book-outline" size={20} color="#fff" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.letakTitle}>{megaLetak.naslov}</Text>
+                <Text style={styles.letakSub}>Prelistaj letak · {megaLetak.strane.length} strana</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color="rgba(255,255,255,0.9)" />
+            </TouchableOpacity>
+          )}
         </View>
       </Animated.View>
+
+      {megaLetak && (
+        <MegaLetakFlipbook
+          visible={flipOpen}
+          onClose={() => setFlipOpen(false)}
+          naslov={megaLetak.naslov}
+          strane={megaLetak.strane}
+          pdfUrl={megaLetak.pdfUrl}
+        />
+      )}
 
       {/* Search + sort */}
       <Animated.View entering={FadeInDown.delay(60).springify()} style={styles.toolbarRow}>

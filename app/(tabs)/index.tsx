@@ -12,7 +12,8 @@ import Ionicons from "@expo/vector-icons/Ionicons"
 import { Colors, FontSize, Radius } from "@/constants/Colors"
 import { OfflineBanner } from "@/components/OfflineBanner"
 import { getCategories, getAkcijaProducts } from "@/lib/api/medusa"
-import { getAkcijaLetak, getPromoKaruzeli } from "@/lib/api/payload"
+import { MegaLetakFlipbook } from "@/components/MegaLetakFlipbook"
+import { getAkcijaLetak, getMegaLetak, getPromoKaruzeli, getAppConfig } from "@/lib/api/payload"
 import { resolveProductPrice } from "@/lib/util/price"
 
 const { width } = Dimensions.get("window")
@@ -292,17 +293,22 @@ export default function HomeScreen() {
   const [categories, setCategories] = useState<any[]>([])
   const [akcijaProducts, setAkcijaProducts] = useState<any[]>([])
   const [letak, setLetak] = useState<any>(null)
+  const [megaLetak, setMegaLetak] = useState<{ naslov: string; pdfUrl: string | null; strane: string[] } | null>(null)
+  const [flipOpen, setFlipOpen] = useState(false)
   const [karuzeli, setKaruzeli] = useState<any[]>([])
+  const [showHero, setShowHero] = useState(false)
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
 
   const fetchData = useCallback(() => {
-    return Promise.all([getCategories(), getAkcijaLetak(), getAkcijaProducts(), getPromoKaruzeli()])
-      .then(([cats, l, prods, kar]) => {
+    return Promise.all([getCategories(), getAkcijaLetak(), getAkcijaProducts(), getPromoKaruzeli(), getMegaLetak(), getAppConfig()])
+      .then(([cats, l, prods, kar, mega, cfg]) => {
         setCategories(cats.slice(0, 14))
         setLetak(l)
         setAkcijaProducts(prods.slice(0, 10))
         setKaruzeli(kar)
+        setMegaLetak(mega)
+        setShowHero(cfg.prikaziHeroKaruzel)
       })
       .finally(() => { setLoading(false); setRefreshing(false) })
   }, [])
@@ -320,8 +326,9 @@ export default function HomeScreen() {
       <StatusBar barStyle="dark-content" backgroundColor={Colors.background} />
       <OfflineBanner />
 
-      {/* Hero fullscreen karuzel iz Payload — samo ako ima slika */}
-      <HeroKaruzel karuzeli={karuzeli} />
+      {/* Hero fullscreen karuzel — prikazuje se SAMO ako je uključen u Payload app-config
+          (prikaziHeroKaruzel) I ako admin doda slike u promo-karuzeli. Inače se ne vidi. */}
+      {showHero && <HeroKaruzel karuzeli={karuzeli} />}
 
       {/* Akcija promo bar */}
       <Animated.View entering={FadeInDown.delay(40).springify().damping(16)} style={styles.promoWrap}>
@@ -349,6 +356,35 @@ export default function HomeScreen() {
           </View>
         </TouchableOpacity>
       </Animated.View>
+
+      {/* Mega Kokamar letak — flipbook baner */}
+      {megaLetak && megaLetak.strane.length > 0 && (
+        <Animated.View entering={FadeInDown.delay(50).springify().damping(16)} style={styles.megaWrap}>
+          <TouchableOpacity style={styles.megaBar} onPress={() => setFlipOpen(true)} activeOpacity={0.88}>
+            <View style={styles.megaIcon}>
+              <Ionicons name="book" size={20} color="#fff" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.megaTitle} numberOfLines={1}>{megaLetak.naslov}</Text>
+              <Text style={styles.megaSub}>Prelistaj letak · {megaLetak.strane.length} strana</Text>
+            </View>
+            <View style={styles.megaCta}>
+              <Text style={styles.megaCtaText}>PRELISTAJ</Text>
+              <Ionicons name="chevron-forward" size={13} color="#fff" />
+            </View>
+          </TouchableOpacity>
+        </Animated.View>
+      )}
+
+      {megaLetak && (
+        <MegaLetakFlipbook
+          visible={flipOpen}
+          onClose={() => setFlipOpen(false)}
+          naslov={megaLetak.naslov}
+          strane={megaLetak.strane}
+          pdfUrl={megaLetak.pdfUrl}
+        />
+      )}
 
       {/* Nedeljna akcija — horizontalni scroll */}
       <NedeljnaAkcija karuzeli={karuzeli} />
@@ -439,7 +475,7 @@ export default function HomeScreen() {
         <View style={styles.quickGrid}>
           {[
             { icon: "pricetags" as const, color: "#7c3aed", title: "Brendovi", sub: "Brendovi u ponudi", route: "/(tabs)/brendovi" },
-            { icon: "location" as const, color: Colors.primary, title: "Lokacije", sub: "10 prodavnica u Beogradu", route: "/(tabs)/lokacije/index" },
+            { icon: "location" as const, color: Colors.primary, title: "Lokacije", sub: "10 prodavnica u Beogradu", route: "/(tabs)/lokacije" },
             { icon: "grid" as const, color: "#1a1a2e", title: "Katalog", sub: "Svi artikli i kategorije", route: "/(tabs)/katalog" },
             { icon: "newspaper" as const, color: "#2d6a2d", title: "Blog", sub: "Recepti, saveti i novosti", route: "/(tabs)/blog" },
           ].map((item) => (
@@ -495,6 +531,29 @@ const styles = StyleSheet.create({
     borderRadius: Radius.full, paddingHorizontal: 10, paddingVertical: 6,
   },
   promoCtaText: { color: Colors.primary, fontSize: FontSize.xs, fontWeight: "800", letterSpacing: 0.4 },
+
+  // Mega letak baner (antracit, kao na sajtu)
+  megaWrap: { paddingHorizontal: 16, marginTop: 12 },
+  megaBar: {
+    backgroundColor: "#2d2d35",
+    borderRadius: Radius.lg, padding: 14,
+    flexDirection: "row", alignItems: "center", gap: 12,
+    shadowColor: "#000", shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.18, shadowRadius: 8, elevation: 3,
+  },
+  megaIcon: {
+    width: 40, height: 40, borderRadius: 12,
+    backgroundColor: Colors.primary,
+    justifyContent: "center", alignItems: "center",
+  },
+  megaTitle: { fontSize: FontSize.base, fontWeight: "800", color: "#fff" },
+  megaSub: { fontSize: FontSize.xs, color: "rgba(255,255,255,0.7)", marginTop: 1 },
+  megaCta: {
+    flexDirection: "row", alignItems: "center", gap: 2,
+    backgroundColor: Colors.primary,
+    borderRadius: Radius.full, paddingHorizontal: 10, paddingVertical: 6,
+  },
+  megaCtaText: { color: "#fff", fontSize: FontSize.xs, fontWeight: "800", letterSpacing: 0.4 },
 
   // Sekcije
   section: { paddingHorizontal: 16, marginTop: 24 },
