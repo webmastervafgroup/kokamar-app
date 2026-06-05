@@ -202,8 +202,12 @@ function NedeljnaAkcija({ karuzeli }: { karuzeli: any[] }) {
               activeOpacity={0.85}
               style={[styles.vikendCard, { width: THUMB }]}
             >
-              <Image source={{ uri: item.src }} style={styles.vikendImg} resizeMode="cover" />
-              <Text style={styles.vikendAlt} numberOfLines={2}>{item.alt}</Text>
+              <Image
+                source={{ uri: item.src }}
+                style={styles.vikendImg}
+                resizeMode="cover"
+                accessibilityLabel={item.alt}
+              />
             </TouchableOpacity>
           </Animated.View>
         )}
