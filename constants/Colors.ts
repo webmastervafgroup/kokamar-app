@@ -35,7 +35,7 @@ export const Radius = {
 }
 
 export const API = {
-  medusaBase: "https://kokamar.rs",
+  medusaBase: "https://api.kokamar.rs",
   medusaKey: "pk_e725befdc143206caa93a8ea5b0b7058d24cf09cb42f319acab7a9059ba20900",
   payloadBase: "https://kokamar.rs/cms/api",
 }
