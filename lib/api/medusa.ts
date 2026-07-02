@@ -56,14 +56,32 @@ export async function getAkcijaProducts() {
     `${API.medusaBase}/store/product-categories?limit=200&fields=id,name`
   )
   const allCats: any[] = catData?.product_categories ?? []
-  const akcijaCat = allCats.find((c: any) =>
-    c.name?.toLowerCase().startsWith("akcija od")
-  )
 
+  // Uzmi sve "Akcija od DD.MM.YYYY do DD.MM.YYYY" kategorije i sortiraj — najnovija prva
+  const akcijaCats = allCats
+    .filter((c: any) => c.name?.toLowerCase().startsWith("akcija od"))
+    .sort((a: any, b: any) => {
+      // Parsiranje datuma iz naziva "Akcija od DD.MM.YYYY do DD.MM.YYYY"
+      const dateA = a.name?.match(/(\d{2})\.(\d{2})\.(\d{4})/)
+      const dateB = b.name?.match(/(\d{2})\.(\d{2})\.(\d{4})/)
+      if (!dateA || !dateB) return 0
+      const tA = new Date(+dateA[3], +dateA[2] - 1, +dateA[1]).getTime()
+      const tB = new Date(+dateB[3], +dateB[2] - 1, +dateB[1]).getTime()
+      return tB - tA // najnovija prva
+    })
+
+  const akcijaCat = akcijaCats[0]
   if (!akcijaCat) return []
 
   const data = await apiFetch(
-    `${API.medusaBase}/store/products?category_id%5B%5D=${akcijaCat.id}&limit=100&region_id=${REGION_ID}`
+    `${API.medusaBase}/store/products?category_id%5B%5D=${akcijaCat.id}&limit=100&region_id=${REGION_ID}&fields=id,title,handle,thumbnail,metadata,variants`
   )
-  return data?.products ?? []
+  const products: any[] = data?.products ?? []
+
+  // Sortiraj po metadata.sort_order (redosled sa flyera)
+  return products.sort((a: any, b: any) => {
+    const sa = Number(a.metadata?.sort_order ?? 9999)
+    const sb = Number(b.metadata?.sort_order ?? 9999)
+    return sa - sb
+  })
 }
