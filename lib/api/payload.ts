@@ -119,10 +119,11 @@ export async function getBrandByName(name: string) {
 }
 
 export async function getPromoKaruzeli() {
-  const data = await payloadFetch(`/promo-karuzeli?where[aktivan][equals]=true&sort=redosled&limit=10&depth=2`)
+  const data = await payloadFetch(`/promo-karuzeli?sort=redosled&limit=10&depth=2`)
   if (!data?.docs) return []
   const now = new Date()
   return data.docs.filter((k: any) => {
+    if (k.aktivan === false) return false // ručno isključen override
     if (k.vaziDo && new Date(k.vaziDo) < now) return false
     if (k.vaziOd && new Date(k.vaziOd) > now) return false
     return true
